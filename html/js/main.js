@@ -126,7 +126,9 @@ const preguntas = [
 // Variables de control
 
 let indice = 0;
-let respuestasUsuario = [];
+
+// Recuperar respuestas guardadas en localStorage
+let respuestasUsuario = JSON.parse(localStorage.getItem("respuestasUsuario")) || new Array(preguntas.length).fill(null);
 
 const preguntaC = document.getElementById("pregunta");
 const opcionesC = document.getElementById("opciones");
@@ -136,23 +138,41 @@ const btnSiguiente = document.getElementById("siguiente");
 // Función para mostrar la pregunta actual
 
 function mostrarPregunta() {
-    const pregunta = preguntas[indice];
-    preguntaC.innerHTML = `<h5>${indice + 1} de ${preguntas.length}: ${pregunta.texto}</h5>`;
-    opcionesC.innerHTML = "";
-    pregunta.opciones.forEach((opcion, i) => {
-        opcionesC.innerHTML += `
+    if (indice < preguntas.length) {
+        const pregunta = preguntas[indice];
+        preguntaC.innerHTML = `<h5>${indice + 1} de ${preguntas.length}: ${pregunta.texto}</h5>`;
+        opcionesC.innerHTML = "";
+        pregunta.opciones.forEach((opcion, i) => {
+            opcionesC.innerHTML += `
         <div class="form-check">
         <input class="form-check-input" type="radio" name="respuesta" value="${i}" id="opcion${i}" ${respuestasUsuario[indice] === i ? "checked" : ""}>
         <label class="form-check-label" for="opcion${i}">${opcion}</label>
         </div>
         `;
-    });
+        });
+    } else {
+        mostrarResultados();
+    }
+
+    btnAnterior.disabled = (indice === 0);
+    btnSiguiente.textContent = (indice === preguntas.length - 1) ? "Finalizar" : "Siguiente";
+}
+
+//Guardar respuesta seleccionada
+
+function guardarRespuesta() {
+    const seleccion = document.querySelector('input[name="respuesta"]:checked');
+    if (seleccion) {
+        respuestasUsuario[indice] = parseInt(seleccion.value);
+        localStorage.setItem("respuestasUsuario", JSON.stringify(respuestasUsuario));
+    }
 }
 
 // Evento para el botón "Anterior"
 
 btnAnterior.addEventListener("click", () => {
     if (indice > 0) {
+        guardarRespuesta();
         indice--;
         mostrarPregunta();
     }
@@ -161,35 +181,51 @@ btnAnterior.addEventListener("click", () => {
 // Evento para el botón "Siguiente"
 
 btnSiguiente.addEventListener("click", () => {
-    const seleccion = document.querySelector("input[name='respuesta']:checked");
-    if (seleccion) {
-        respuestasUsuario[indice] = parseInt(seleccion.value);
-    }
+    guardarRespuesta();
     if (indice < preguntas.length - 1) {
         indice++;
         mostrarPregunta();
     } else {
-        finalizarCuestionario();
+        mostrarResultados();
     }
 });
 
-// Finalizar Cuestionario
+// // Finalizar Cuestionario
 
-function finalizarCuestionario() {
-    let aciertos = 0;
-    preguntas.forEach((p, i) => {
-        if (respuestasUsuario[i] === p.respuesta) {
-            aciertos++;
+// function finalizarCuestionario() {
+//     let aciertos = 0;
+//     preguntas.forEach((p, i) => {
+//         if (respuestasUsuario[i] === p.respuesta) {
+//             aciertos++;
+//         }
+//     });
+
+//     document.body.innerHTML =
+//         `<div class= "container text-center py-5">
+//     <h2>Resultados del cuestionario</h2>
+//     <p><strong>Aciertos:</strong> ${aciertos}</p>
+//     <p><strong>Errores:</strong> ${preguntas.length - aciertos} </p>
+//     </div>
+//     `;
+// }
+
+// Mostrar Resultados al finalizar el cuestionario
+
+function mostrarResultados() {
+    let correctas = 0;
+    preguntas.forEach((pregunta, i) => {
+        if (respuestasUsuario[i] === pregunta.respuesta) {
+            correctas++;
         }
     });
-
-    document.body.innerHTML =
-        `<div class= "container text-center py-5">
-    <h2>Resultados del cuestionario</h2>
-    <p><strong>Aciertos:</strong> ${aciertos}</p>
-    <p><strong>Errores:</strong> ${preguntas.length - aciertos} </p>
-    </div>
+    preguntaC.innerHTML = `<h4>Resultados del Cuestionario</h4>`;
+    opcionesC.innerHTML = `
+    <p>Has contestado correctamente <strong>${correctas}</strong> de <strong>${preguntas.length}</strong> preguntas.</p>
+    <p>Errores: <strong>${preguntas.length - correctas}</strong></p>
     `;
+
+    btnAnterior.style.display = "none";
+    btnSiguiente.style.display = "none";
 }
 
 // Mostrar la primera pregunta al cargar
